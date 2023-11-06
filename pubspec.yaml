@@ -1,0 +1,34 @@
+name: diary_app
+description: A new Flutter project.
+publish_to: 'none' 
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_ui_auth: ^1.9.1
+  google_fonts: ^6.1.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.1
+  grouped_list: ^5.1.2
+  firebase_core: ^2.21.0
+  firebase_auth: ^4.12.1
+  intl: ^0.18.1
+  google_sign_in: ^6.1.5
+  firebase_ui_oauth_google: ^1.2.13
+  cloud_firestore: ^4.12.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.0.4
+  analyzer: 6.2.0
+
+flutter:
+  uses-material-design: true
