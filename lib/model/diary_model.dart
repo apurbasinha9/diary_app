@@ -1,21 +1,15 @@
-import 'package:hive/hive.dart';
-
-part 'diary_model.g.dart';
-
-@HiveType(typeId: 0)
 class DiaryModel {
-  @HiveField(0)
+  String id;
   String date;
-
-  @HiveField(1)
   String description;
-
-  @HiveField(2)
   int rating;
+  String imageURL;
 
-  DiaryModel(
-    this.date,
-    this.description,
-    this.rating,
-  );
+  DiaryModel({
+    required this.id,
+    required this.date,
+    required this.description,
+    required this.rating,
+    required this.imageURL,
+  });
 }

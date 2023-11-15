@@ -18,13 +18,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final entries = controller.listDiaryEntries();
-    final groupedEntries = groupEntriesByDate(entries);
-
-    // Sort the keys (dates) in descending order
-    final sortedDates = groupedEntries.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -100,112 +93,201 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
-      body: ListView.builder(
-        itemCount: sortedDates.length,
-        itemBuilder: (context, index) {
-          final date = sortedDates[index];
-          final entriesForDate = groupedEntries[date];
+      body: FutureBuilder<List<DiaryModel>>(
+        future: controller.listDiaryEntries(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('An error occurred.'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No diary entries found.'));
+          } else {
+            final entries = snapshot.data!;
+            final groupedEntries = groupEntriesByMonthAndYear(entries);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 8),
-                  child: Text(
-                    DateFormat('MMMM y').format(date),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Color.fromARGB(255, 0, 0, 0),
-                    ),
-                  ),
-                ),
-              ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const ClampingScrollPhysics(),
-                itemCount: entriesForDate!.length,
-                itemBuilder: (context, subIndex) {
-                  final entry = entriesForDate[subIndex];
+            return Scaffold(
+              backgroundColor: const Color.fromARGB(255, 247, 246, 245),
+              body: ListView.builder(
+                itemCount: groupedEntries.length,
+                itemBuilder: (context, index) {
+                  final monthYear = groupedEntries.keys.toList()[index];
+                  final entriesForMonthYear = groupedEntries[monthYear];
 
                   return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                            color: const Color.fromARGB(255, 0, 0, 0),
-                            width: 1.0),
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(8.0)),
-                      ),
-                      child: ListTile(
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              DateFormat('E, MMM d').format(date),
+                    padding: const EdgeInsets.only(right: 10, left: 10, top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 8,
+                              bottom: 8,
+                            ),
+                            child: Text(
+                              monthYear,
                               style: const TextStyle(
-                                // fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: 20,
                                 color: Color.fromARGB(255, 0, 0, 0),
                               ),
                             ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: List.generate(5, (index) {
-                                return Icon(
-                                  index < entry.rating
-                                      ? Icons.star
-                                      : Icons.star_border,
-                                  color: const Color.fromARGB(255, 224, 67, 9),
-                                );
-                              }),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Color.fromARGB(255, 5, 51, 79),
-                              ),
-                              onPressed: () {
-                                controller
-                                    .deleteDiary(index); // Delete the entry
-                                setState(() {});
-                              },
-                            )
-                          ],
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Text(
-                            entry.description,
-                            style: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0),
-                            ),
                           ),
                         ),
-                      ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const ClampingScrollPhysics(),
+                          itemCount: entriesForMonthYear!.length,
+                          itemBuilder: (context, subIndex) {
+                            final entry = entriesForMonthYear[subIndex];
+
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color.fromARGB(255, 238, 238, 236),
+                                  border: Border.all(
+                                    color: const Color.fromARGB(
+                                        255, 238, 238, 236),
+                                    width: 1.0,
+                                  ),
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(5.0)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.4),
+                                      spreadRadius: 2,
+                                      blurRadius: 4,
+                                      offset: const Offset(
+                                          0, 2), // changes position of shadow
+                                    ),
+                                  ],
+                                ),
+                                child: ListTile(
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const SizedBox(
+                                              height: 5,
+                                            ),
+                                            if (entry.imageURL.isNotEmpty)
+                                              Image.network(
+                                                entry.imageURL,
+                                                height: 150,
+                                              ),
+                                            const SizedBox(height: 8),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Card(
+                                        elevation: 2,
+                                        color: const Color.fromARGB(
+                                            255, 255, 217, 168),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                DateFormat('E, MMM d').format(
+                                                    DateTime.parse(entry.date)),
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontFamily:
+                                                      AutofillHints.countryCode,
+                                                  color: Color.fromARGB(
+                                                      255, 0, 0, 0),
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                  decorationThickness: 2,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 10),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children:
+                                                    List.generate(5, (index) {
+                                                  return Icon(
+                                                    index < entry.rating
+                                                        ? Icons.star
+                                                        : Icons.star_border,
+                                                    color: const Color.fromARGB(
+                                                        255, 224, 67, 9),
+                                                  );
+                                                }),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: Color.fromARGB(
+                                                      255, 5, 51, 79),
+                                                ),
+                                                onPressed: () {
+                                                  controller
+                                                      .deleteDiary(entry.id);
+                                                  setState(() {});
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Center(
+                                    child: Text(
+                                      entry.description,
+                                      style: const TextStyle(
+                                        color: Color.fromARGB(255, 0, 0, 0),
+                                        fontSize: 12,
+                                        fontFamily:
+                                            AutofillHints.streetAddressLevel4,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
-            ],
-          );
+            );
+          }
         },
       ),
     );
   }
 
-  Map<DateTime, List<DiaryModel>> groupEntriesByDate(List<DiaryModel> entries) {
-    final groupedEntries = <DateTime, List<DiaryModel>>{};
+  Map<String, List<DiaryModel>> groupEntriesByMonthAndYear(
+      List<DiaryModel> entries) {
+    final groupedEntries = <String, List<DiaryModel>>{};
 
     for (final entry in entries) {
-      final date = DateFormat('yyyy-MM-dd').parse(entry.date);
-      if (groupedEntries.containsKey(date)) {
-        groupedEntries[date]!.add(entry);
+      final monthYear = DateFormat('MMMM y').format(DateTime.parse(entry.date));
+      if (groupedEntries.containsKey(monthYear)) {
+        groupedEntries[monthYear]!.add(entry);
       } else {
-        groupedEntries[date] = [entry];
+        groupedEntries[monthYear] = [entry];
       }
     }
+
+    // Sort entries within each month and year
+    groupedEntries.forEach((monthYear, entries) {
+      entries.sort((a, b) => b.date.compareTo(a.date));
+    });
 
     return groupedEntries;
   }

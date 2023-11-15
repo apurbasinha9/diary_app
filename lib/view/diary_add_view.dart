@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:diary_app/model/diary_model.dart';
 import 'package:flutter/material.dart';
 import 'package:diary_app/controller/diary_controller.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class AddDiary extends StatefulWidget {
@@ -19,34 +22,54 @@ class _AddDiaryState extends State<AddDiary> {
   final DiaryController controller = DiaryController();
   DateTime selectedDate = DateTime.now();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController imageController = TextEditingController();
   double rating = 1.0;
+  File? _imageFile;
 
-  void saveEntry() {
+  void saveEntry() async {
     final date = selectedDate;
     final description = descriptionController.text;
+    String imageURL = _imageFile != null ? _imageFile!.path : '';
 
     if (description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Please enter a description.'),
       ));
     } else {
-      final formattedDate = DateFormat('yyyy-MM-dd').format(date);
-      final entries = controller.listDiaryEntries();
+      final formattedDate = date.toLocal().toString();
 
-      if (entries.any((entry) => entry.date == formattedDate)) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('An entry for this date already exists!'),
-        ));
-      } else {
-        final entry = DiaryModel(
-          formattedDate,
-          description,
-          rating.toInt(),
-        );
-        controller.addDiary(entry);
-        widget.onDiaryAdded.call();
-        Navigator.pop(context);
-      }
+      final entry = DiaryModel(
+        id: UniqueKey().toString(),
+        date: formattedDate,
+        description: description,
+        rating: rating.toInt(),
+        imageURL: imageURL, // Image URL initially empty
+      );
+      await controller.addDiary(entry, imageFile: _imageFile);
+      setState(() {});
+      widget.onDiaryAdded.call();
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _getImageFromGallery() async {
+    final imagePicker = ImagePicker();
+    XFile? pickedFile =
+        await imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _getImageFromCamera() async {
+    final imagePicker = ImagePicker();
+    XFile? pickedFile = await imagePicker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
     }
   }
 
@@ -61,6 +84,23 @@ class _AddDiaryState extends State<AddDiary> {
       setState(() {
         selectedDate = picked;
       });
+    }
+  }
+
+  Widget _displaySelectedImage() {
+    if (_imageFile != null) {
+      return Container(
+        height: 50, // Adjust the height as needed
+        width: 50, // Adjust the width as needed
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: FileImage(_imageFile!), // Display the selected image
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      return Container(); // Return an empty container if no image is selected
     }
   }
 
@@ -116,7 +156,27 @@ class _AddDiaryState extends State<AddDiary> {
               ],
             ),
             const SizedBox(
-              height: 30,
+              height: 15,
+            ),
+            Row(
+              children: [
+                const Text("Pick Image: "),
+                ElevatedButton(
+                  onPressed: _getImageFromGallery,
+                  child: const Icon(Icons.image),
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                ElevatedButton(
+                  onPressed: _getImageFromCamera,
+                  child: const Icon(Icons.camera_alt),
+                ),
+                _displaySelectedImage(),
+              ],
+            ),
+            const SizedBox(
+              height: 10,
             ),
             Row(
               children: [
@@ -135,12 +195,12 @@ class _AddDiaryState extends State<AddDiary> {
                   max: 5.0,
                   divisions: 4,
                   label: rating.toStringAsFixed(1),
-                  activeColor: Color.fromARGB(255, 17, 153, 177),
+                  activeColor: const Color.fromARGB(255, 17, 153, 177),
                 ),
               ],
             ),
             const SizedBox(
-              height: 15,
+              height: 14,
             ),
             ElevatedButton(
               onPressed: saveEntry,
